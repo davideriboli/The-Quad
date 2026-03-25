@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quadrat I + II — Samuel Beckett (1981)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@300;400&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0a;
+    --fg: #b0b0b0;
+    --fg-dim: #555;
+    --white: #e8e0d4;
+    --red: #c43e3a;
+    --blue: #3a6fc4;
+    --yellow: #c4a83a;
+    --quad-size: min(70vw, 70vh);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'EB Garamond', 'Georgia', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  header {
+    text-align: center;
+    padding: 2rem 1rem 0.5rem;
+    opacity: 0;
+    animation: fadeIn 3s ease forwards;
+  }
+
+  header h1 {
+    font-size: clamp(1.2rem, 3vw, 1.8rem);
+    font-weight: 400;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+  }
+
+  header h1 span.title-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 300;
+    font-size: 0.85em;
+  }
+
+  header .subtitle {
+    font-style: italic;
+    font-size: clamp(0.75rem, 1.5vw, 0.95rem);
+    color: var(--fg-dim);
+    margin-top: 0.3rem;
+    letter-spacing: 0.1em;
+  }
+
+  #stage-container {
+    position: relative;
+    width: var(--quad-size);
+    height: var(--quad-size);
+    margin: 1.5rem auto;
+    flex-shrink: 0;
+  }
+
+  canvas#trailCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+
+  canvas#mainCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+
+  #info-bar {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(0.6rem, 1.2vw, 0.78rem);
+    color: var(--fg-dim);
+    text-align: center;
+    padding: 0.5rem 1rem;
+    letter-spacing: 0.08em;
+    line-height: 1.7;
+    min-height: 3.5em;
+    opacity: 0;
+    animation: fadeIn 4s 1s ease forwards;
+    max-width: 600px;
+  }
+
+  #controls {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem 0.8rem;
+    opacity: 0;
+    animation: fadeIn 4s 2s ease forwards;
+    flex-wrap: wrap;
+  }
+
+  #controls button {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--fg-dim);
+    color: var(--fg-dim);
+    padding: 0.45rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.4s ease;
+  }
+
+  #controls button:hover {
+    border-color: var(--fg);
+    color: var(--fg);
+  }
+
+  #controls button.active {
+    border-color: var(--fg);
+    color: var(--white);
+    background: rgba(255,255,255,0.05);
+  }
+
+  /* --- Legend --- */
+  #legend {
+    opacity: 0;
+    animation: fadeIn 4s 2.5s ease forwards;
+    max-width: 520px;
+    width: 90%;
+    padding: 1rem 0 0.5rem;
+  }
+
+  #legend details {
+    border: 1px solid #222;
+    border-radius: 2px;
+  }
+
+  #legend summary {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+    cursor: pointer;
+    padding: 0.5rem 0.8rem;
+    list-style: none;
+    text-align: center;
+  }
+
+  #legend summary::-webkit-details-marker { display: none; }
+  #legend summary::before { content: '▸ '; }
+  #legend details[open] summary::before { content: '▾ '; }
+
+  #legend .legend-content {
+    padding: 0.6rem 1rem 1rem;
+    border-top: 1px solid #1a1a1a;
+  }
+
+  #legend h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+    margin: 0.7rem 0 0.3rem;
+  }
+
+  #legend h3:first-child { margin-top: 0; }
+
+  #legend .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.2rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: #777;
+    letter-spacing: 0.05em;
+  }
+
+  #legend .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  #legend .legend-center {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: radial-gradient(circle, rgba(255,255,255,0.95) 30%, rgba(255,255,255,0.2) 100%);
+    box-shadow: 0 0 6px rgba(255,255,255,0.5);
+  }
+
+  #legend .legend-trail {
+    width: 22px;
+    height: 4px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    opacity: 0.5;
+  }
+
+  #legend .legend-text-block {
+    font-size: 0.58rem;
+    color: #666;
+    line-height: 1.5;
+    padding: 0.3rem 0;
+  }
+
+  #legend .legend-course {
+    font-size: 0.55rem;
+    color: #555;
+    line-height: 1.6;
+    padding: 0.15rem 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  footer {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    color: #333;
+    text-align: center;
+    padding: 0.5rem 1rem 1.5rem;
+    letter-spacing: 0.1em;
+    opacity: 0;
+    animation: fadeIn 5s 3s ease forwards;
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Quadrat <span class="title-num">I + II</span></h1>
+  <div class="subtitle">Samuel Beckett — Süddeutscher Rundfunk, 1981</div>
+</header>
+
+<div id="stage-container">
+  <canvas id="trailCanvas"></canvas>
+  <canvas id="mainCanvas"></canvas>
+</div>
+
+<div id="info-bar">
+  <span id="phase-label">—</span><br>
+  <span id="series-label"></span> · <span id="combo-label"></span>
+</div>
+
+<div id="controls">
+  <button id="btnQuad1" class="active">Quad I</button>
+  <button id="btnQuad2">Quad II</button>
+  <button id="btnAuto">Auto</button>
+  <button id="btnPause">Pausa</button>
+</div>
+
+<div id="legend">
+  <details>
+    <summary>Legenda</summary>
+    <div class="legend-content">
+
+      <h3>Giocatori — Quad I</h3>
+      <div class="legend-row">
+        <span class="legend-dot" style="background:#e8e0d4;"></span>
+        Giocatore 1 — bianco (tamburo) — angolo A
+      </div>
+      <div class="legend-row">
+        <span class="legend-dot" style="background:#c4a83a;"></span>
+        Giocatore 2 — giallo (gong) — angolo B
+      </div>
+      <div class="legend-row">
+        <span class="legend-dot" style="background:#3a6fc4;"></span>
+        Giocatore 3 — blu (triangolo) — angolo C
+      </div>
+      <div class="legend-row">
+        <span class="legend-dot" style="background:#c43e3a;"></span>
+        Giocatore 4 — rosso (wood block) — angolo D
+      </div>
+
+      <h3>Giocatori — Quad II</h3>
+      <div class="legend-row">
+        <span class="legend-dot" style="background:#888;"></span>
+        Tutti in tuniche bianche identiche — nessun colore, nessuna percussione
+      </div>
+
+      <h3>Spazio scenico</h3>
+      <div class="legend-row">
+        <span class="legend-center"></span>
+        Centro E — «danger zone» — sempre aggirato a sinistra
+      </div>
+      <div class="legend-text-block">
+        Il quadrato ha lato di 6 passi. I giocatori percorrono lati e diagonali,
+        senza mai toccarsi e senza mai attraversare il centro.
+        Angoli: A (alto-sx), B (alto-dx), C (basso-dx), D (basso-sx).
+      </div>
+
+      <h3>Percorsi (dalla partitura, Faber 1984)</h3>
+      <div class="legend-course">Corso 1: A→C, C→B, B→A, A→D, D→B, B→C, C→D, D→A</div>
+      <div class="legend-course">Corso 2: B→A, A→D, D→B, B→C, C→D, D→A, A→C, C→B</div>
+      <div class="legend-course">Corso 3: C→D, D→A, A→C, C→B, B→A, A→D, D→B, B→C</div>
+      <div class="legend-course">Corso 4: D→B, B→C, C→D, D→A, A→C, C→B, B→A, A→D</div>
+
+      <h3>Scie luminose</h3>
+      <div class="legend-row">
+        <span class="legend-trail" style="background: linear-gradient(90deg, #e8e0d430, transparent);"></span>
+        Tracce effimere lasciate dal passaggio dei giocatori
+      </div>
+
+      <h3>Struttura combinatoria (4 serie × 6 fasi)</h3>
+      <div class="legend-text-block">
+        Ogni serie attraversa tutte le combinazioni possibili:<br>
+        Solo → Duo → Trio → Quartetto → Trio → Duo<br><br>
+        Serie I: &ensp;1 · 1,3 · 1,3,4 · 1,3,4,2 · 3,4,2 · 4,2<br>
+        Serie II: &ensp;2 · 2,1 · 2,1,4 · 2,1,4,3 · 1,4,3 · 4,3<br>
+        Serie III: 3 · 3,2 · 3,2,1 · 3,2,1,4 · 2,1,4 · 1,4<br>
+        Serie IV: 4 · 4,3 · 4,3,2 · 4,3,2,1 · 3,2,1 · 2,1<br><br>
+        <strong>Quad I</strong> — tutte e 4 le serie, a colori, con percussioni.<br>
+        <strong>Quad II</strong> — 1 sola serie, bianco/nero, metà velocità,
+        solo passi e metronomo.<br>
+        «My God, it's a hundred thousand years later!»
+      </div>
+
+    </div>
+  </details>
+</div>
+
+<footer>
+  «A piece for four players, light and percussion» — Faber &amp; Faber, 1984<br>
+  Implementazione digitale · vista dall'alto
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const container = document.getElementById('stage-container');
+  const trailCvs = document.getElementById('trailCanvas');
+  const mainCvs  = document.getElementById('mainCanvas');
+  const trailCtx = trailCvs.getContext('2d');
+  const mainCtx  = mainCvs.getContext('2d');
+
+  const phaseLabel  = document.getElementById('phase-label');
+  const seriesLabel = document.getElementById('series-label');
+  const comboLabel  = document.getElementById('combo-label');
+
+  let W, H, S, ox, oy;
+  const dpr = window.devicePixelRatio || 1;
+
+  let CR_Q1 = 0, CR_Q2 = 0;
+  function updateSizes() { CR_Q1 = S * 0.028; CR_Q2 = S * 0.022; }
+
+  function resize() {
+    const rect = container.getBoundingClientRect();
+    W = rect.width * dpr;
+    H = rect.height * dpr;
+    trailCvs.width = mainCvs.width = W;
+    trailCvs.height = mainCvs.height = H;
+    S = Math.min(W, H) * 0.82;
+    ox = (W - S) / 2;
+    oy = (H - S) / 2;
+    updateSizes();
+  }
+  resize();
+  window.addEventListener('resize', () => { resize(); trailCtx.clearRect(0, 0, W, H); });
+
+  /* Corners:  A ---- B
+               |   E  |
+               D ---- C  */
+  const corners = {
+    A: () => [ox, oy],
+    B: () => [ox + S, oy],
+    C: () => [ox + S, oy + S],
+    D: () => [ox, oy + S],
+    E: () => [ox + S / 2, oy + S / 2],
+  };
+  const offstage = {
+    A: () => [ox - S * 0.12, oy - S * 0.12],
+    B: () => [ox + S + S * 0.12, oy - S * 0.12],
+    C: () => [ox + S + S * 0.12, oy + S + S * 0.12],
+    D: () => [ox - S * 0.12, oy + S + S * 0.12],
+  };
+
+  const COLORS_Q1 = ['#e8e0d4', '#c4a83a', '#3a6fc4', '#c43e3a'];
+  const COLORS_Q2 = ['#888888', '#888888', '#888888', '#888888'];
+  const HOME = ['A', 'B', 'C', 'D'];
+
+  // Beckett's courses
+  const COURSES = [
+    ['A','C','B','A','D','B','C','D','A'],
+    ['B','A','D','B','C','D','A','C','B'],
+    ['C','D','A','C','B','A','D','B','C'],
+    ['D','B','C','D','A','C','B','A','D'],
+  ];
+
+  function isDiag(a, b) {
+    return (a === 'A' && b === 'C') || (a === 'C' && b === 'A') ||
+           (a === 'B' && b === 'D') || (a === 'D' && b === 'B');
+  }
+  function bypass(a, b) {
+    const e = corners.E();
+    const d = S * 0.06;
+    if (a === 'A' && b === 'C') return [e[0] - d, e[1] + d];
+    if (a === 'C' && b === 'A') return [e[0] + d, e[1] - d];
+    if (a === 'B' && b === 'D') return [e[0] + d, e[1] + d];
+    if (a === 'D' && b === 'B') return [e[0] - d, e[1] - d];
+    return e;
+  }
+  function segWP(a, b) {
+    const p1 = corners[a](), p2 = corners[b]();
+    return isDiag(a, b) ? [p1, bypass(a, b), p2] : [p1, p2];
+  }
+
+  const SERIES = [
+    [[0], [0,2], [0,2,3], [0,2,3,1], [2,3,1], [3,1]],
+    [[1], [1,0], [1,0,3], [1,0,3,2], [0,3,2], [3,2]],
+    [[2], [2,1], [2,1,0], [2,1,0,3], [1,0,3], [0,3]],
+    [[3], [3,2], [3,2,1], [3,2,1,0], [2,1,0], [1,0]],
+  ];
+
+  // Players
+  const players = Array.from({ length: 4 }, (_, i) => ({
+    x: 0, y: 0, active: false, color: COLORS_Q1[i], wp: [],
+  }));
+
+  let mode = 'quad1';
+  let autoMode = false;
+  let paused = false;
+  let curSeries = 0;
+  let curStage = 0;
+
+  // Speeds — reduced by ~1/3 from v1
+  const SPD_Q1 = 0.008;
+  const SPD_Q2 = 0.004;
+  let speed = SPD_Q1;
+
+  const TRAIL_FADE = 0.006;
+
+  function initPlayers() {
+    for (let i = 0; i < 4; i++) {
+      const o = offstage[HOME[i]]();
+      players[i].x = o[0]; players[i].y = o[1];
+      players[i].active = false; players[i].wp = [];
+    }
+  }
+  function buildCourse(pi) {
+    const c = COURSES[pi]; let w = [];
+    for (let s = 0; s < c.length - 1; s++) {
+      const seg = segWP(c[s], c[s + 1]);
+      s === 0 ? w.push(...seg) : w.push(...seg.slice(1));
+    }
+    return w;
+  }
+  function buildEntry(pi) { return [offstage[HOME[pi]](), corners[HOME[pi]]()]; }
+  function buildExit(pi)  { return [corners[HOME[pi]](), offstage[HOME[pi]]()]; }
+
+  function lerp(wp, t) {
+    if (!wp || wp.length < 2) return wp ? wp[0] || [0,0] : [0,0];
+    let lens = [], tot = 0;
+    for (let i = 0; i < wp.length - 1; i++) {
+      const dx = wp[i+1][0]-wp[i][0], dy = wp[i+1][1]-wp[i][1];
+      const l = Math.sqrt(dx*dx+dy*dy); lens.push(l); tot += l;
+    }
+    if (tot === 0) return wp[0];
+    let tgt = Math.max(0, Math.min(1, t)) * tot, acc = 0;
+    for (let i = 0; i < lens.length; i++) {
+      if (acc + lens[i] >= tgt || i === lens.length - 1) {
+        const st = lens[i] > 0 ? (tgt - acc) / lens[i] : 0;
+        const ct = Math.max(0, Math.min(1, st));
+        return [wp[i][0]+(wp[i+1][0]-wp[i][0])*ct, wp[i][1]+(wp[i+1][1]-wp[i][1])*ct];
+      }
+      acc += lens[i];
+    }
+    return wp[wp.length - 1];
+  }
+
+  // --- Sequencer ---
+  let phase = 'wait', phaseT = 0, courseT = 0;
+  let active = [], prev = [];
+  let entering = -1, exiting = -1;
+
+  function fullReset() {
+    phase = 'wait'; phaseT = 0; courseT = 0;
+    active = []; prev = []; entering = -1; exiting = -1;
+    curSeries = 0; curStage = 0;
+    initPlayers();
+    trailCtx.clearRect(0, 0, W, H);
+  }
+
+  function startStage() {
+    const next = SERIES[curSeries][curStage];
+    const pSet = new Set(prev), nSet = new Set(next);
+    const ent = next.filter(p => !pSet.has(p));
+    const ext = prev.filter(p => !nSet.has(p));
+
+    phaseT = 0; courseT = 0; entering = -1; exiting = -1;
+
+    if (ent.length > 0) {
+      entering = ent[0];
+      phase = 'enter';
+      players[entering].wp = buildEntry(entering);
+      players[entering].active = true;
+    } else if (ext.length > 0) {
+      exiting = ext[0];
+      phase = 'exit';
+      players[exiting].wp = buildExit(exiting);
+    } else if (curStage === 0 && prev.length === 0) {
+      entering = next[0];
+      phase = 'enter';
+      players[entering].wp = buildEntry(entering);
+      players[entering].active = true;
+    } else {
+      phase = 'course';
+    }
+
+    active = [...next];
+    for (const pi of active) {
+      if (pi !== entering) {
+        players[pi].wp = buildCourse(pi);
+        players[pi].active = true;
+      }
+    }
+    updateInfo();
+  }
+
+  function advance() {
+    prev = [...active];
+    curStage++;
+    if (curStage >= SERIES[curSeries].length) {
+      curStage = 0;
+      curSeries++;
+      if (curSeries >= 4) {
+        curSeries = 0;
+        if (autoMode && mode === 'quad1') { doQuad2(); return; }
+        if (autoMode && mode === 'quad2') { doQuad1(); return; }
+        prev = []; initPlayers();
+      }
+    }
+    startStage();
+  }
+
+  function updateInfo() {
+    const m = mode === 'quad1' ? 'QUADRAT I' : 'QUADRAT II';
+    const sr = ['I','II','III','IV'][curSeries];
+    const ct = active.length === 1 ? 'Solo' : active.length === 2 ? 'Duo' :
+               active.length === 3 ? 'Trio' : 'Quartetto';
+    const cn = ['bianco','giallo','blu','rosso'];
+    phaseLabel.textContent = m;
+    seriesLabel.textContent = 'Serie ' + sr;
+    comboLabel.textContent = mode === 'quad2'
+      ? ct + ' — giocatori ' + active.map(i=>i+1).join(', ')
+      : ct + ' — ' + active.map(i=>cn[i]).join(' + ');
+  }
+
+  // --- Drawing ---
+  function drawQuad(ctx) {
+    const a=corners.A(), b=corners.B(), c=corners.C(), d=corners.D(), e=corners.E();
+    ctx.save();
+    // Square
+    ctx.strokeStyle = mode==='quad1' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1*dpr;
+    ctx.beginPath();
+    ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]);
+    ctx.lineTo(c[0],c[1]); ctx.lineTo(d[0],d[1]); ctx.closePath(); ctx.stroke();
+    // Diagonals
+    ctx.strokeStyle = mode==='quad1' ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.02)';
+    ctx.setLineDash([4*dpr,8*dpr]);
+    ctx.beginPath();
+    ctx.moveTo(a[0],a[1]); ctx.lineTo(c[0],c[1]);
+    ctx.moveTo(b[0],b[1]); ctx.lineTo(d[0],d[1]); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Center E — prominent white point with glow
+    const cr = S * 0.018;
+    // Outer glow
+    const g = ctx.createRadialGradient(e[0],e[1],0,e[0],e[1],cr*5);
+    if (mode==='quad1') {
+      g.addColorStop(0,'rgba(255,255,255,0.30)');
+      g.addColorStop(0.3,'rgba(255,255,255,0.08)');
+      g.addColorStop(1,'transparent');
+    } else {
+      g.addColorStop(0,'rgba(255,255,255,0.18)');
+      g.addColorStop(0.3,'rgba(255,255,255,0.04)');
+      g.addColorStop(1,'transparent');
+    }
+    ctx.beginPath(); ctx.arc(e[0],e[1],cr*5,0,Math.PI*2);
+    ctx.fillStyle=g; ctx.fill();
+    // Main dot
+    ctx.beginPath(); ctx.arc(e[0],e[1],cr,0,Math.PI*2);
+    ctx.fillStyle = mode==='quad1' ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.45)';
+    ctx.fill();
+    // Bright core
+    ctx.beginPath(); ctx.arc(e[0],e[1],cr*0.4,0,Math.PI*2);
+    ctx.fillStyle = mode==='quad1' ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.65)';
+    ctx.fill();
+
+    // Labels
+    ctx.font = `${10*dpr}px 'JetBrains Mono',monospace`;
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.textAlign = 'center';
+    const o = S*0.05;
+    ctx.fillText('A',a[0]-o,a[1]-o);
+    ctx.fillText('B',b[0]+o,b[1]-o);
+    ctx.fillText('C',c[0]+o,c[1]+o+10*dpr);
+    ctx.fillText('D',d[0]-o,d[1]+o+10*dpr);
+    ctx.fillText('E',e[0],e[1]+cr+12*dpr);
+    ctx.restore();
+  }
+
+  function drawPlayer(ctx, p, r) {
+    if (!p.active) return;
+    ctx.save();
+    const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*3);
+    g.addColorStop(0, p.color+'40'); g.addColorStop(1,'transparent');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,r*3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x,p.y,r,0,Math.PI*2); ctx.fillStyle=p.color; ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x-r*0.25,p.y-r*0.25,r*0.35,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.fill();
+    ctx.restore();
+  }
+
+  function drawTrail(ctx, p) {
+    if (!p.active) return;
+    const tw = (mode==='quad1' ? 2.5 : 1.5) * dpr;
+    ctx.beginPath(); ctx.arc(p.x,p.y,tw,0,Math.PI*2);
+    ctx.fillStyle = p.color+'18'; ctx.fill();
+  }
+
+  // --- Main loop ---
+  let lastT = 0, started = false;
+
+  function tick(ts) {
+    requestAnimationFrame(tick);
+    if (!started) { started=true; lastT=ts; fullReset(); startStage(); return; }
+    if (paused) { lastT=ts; return; }
+
+    const dt = Math.min((ts-lastT)/16.67, 3); lastT=ts;
+    const spd = speed*dt;
+    const espd = spd*1.5;
+
+    if (phase==='enter' && entering>=0) {
+      phaseT += espd;
+      if (phaseT>=1) {
+        const p=lerp(players[entering].wp,1);
+        players[entering].x=p[0]; players[entering].y=p[1];
+        players[entering].wp = buildCourse(entering);
+        entering=-1; phase='course'; courseT=0;
+        for (const pi of active) players[pi].wp = buildCourse(pi);
+      } else {
+        const p=lerp(players[entering].wp,phaseT);
+        players[entering].x=p[0]; players[entering].y=p[1];
+      }
+    }
+
+    if (phase==='course') {
+      courseT += spd;
+      if (courseT>=1) {
+        for (const pi of active) {
+          const p=lerp(players[pi].wp,1);
+          players[pi].x=p[0]; players[pi].y=p[1];
+        }
+        advance();
+      } else {
+        for (const pi of active) {
+          if (pi===entering) continue;
+          const p=lerp(players[pi].wp,courseT);
+          players[pi].x=p[0]; players[pi].y=p[1];
+        }
+      }
+    }
+
+    if (phase==='exit' && exiting>=0) {
+      phaseT += espd;
+      if (phaseT>=1) {
+        players[exiting].active=false;
+        const o=offstage[HOME[exiting]]();
+        players[exiting].x=o[0]; players[exiting].y=o[1];
+        exiting=-1; phase='course'; courseT=0;
+        for (const pi of active) {
+          if (players[pi].active) players[pi].wp = buildCourse(pi);
+        }
+      } else {
+        const p=lerp(players[exiting].wp,phaseT);
+        players[exiting].x=p[0]; players[exiting].y=p[1];
+      }
+    }
+
+    // Trails
+    trailCtx.fillStyle = `rgba(10,10,10,${TRAIL_FADE})`;
+    trailCtx.fillRect(0,0,W,H);
+    for (const p of players) drawTrail(trailCtx, p);
+
+    // Main
+    mainCtx.clearRect(0,0,W,H);
+    drawQuad(mainCtx);
+    const r = mode==='quad1' ? CR_Q1 : CR_Q2;
+    for (const p of players) drawPlayer(mainCtx, p, r);
+  }
+
+  // --- Controls ---
+  const btnQ1   = document.getElementById('btnQuad1');
+  const btnQ2   = document.getElementById('btnQuad2');
+  const btnAuto = document.getElementById('btnAuto');
+  const btnP    = document.getElementById('btnPause');
+
+  function doQuad1() {
+    mode='quad1'; speed=SPD_Q1;
+    for (let i=0;i<4;i++) players[i].color=COLORS_Q1[i];
+    btnQ1.classList.add('active'); btnQ2.classList.remove('active');
+    fullReset(); startStage();
+  }
+  function doQuad2() {
+    mode='quad2'; speed=SPD_Q2;
+    for (let i=0;i<4;i++) players[i].color=COLORS_Q2[i];
+    btnQ2.classList.add('active'); btnQ1.classList.remove('active');
+    fullReset(); startStage();
+  }
+
+  btnQ1.addEventListener('click', () => { autoMode=false; btnAuto.classList.remove('active'); doQuad1(); });
+  btnQ2.addEventListener('click', () => { autoMode=false; btnAuto.classList.remove('active'); doQuad2(); });
+  btnAuto.addEventListener('click', () => {
+    autoMode=!autoMode; btnAuto.classList.toggle('active',autoMode);
+    if (autoMode) doQuad1();
+  });
+  btnP.addEventListener('click', () => {
+    paused=!paused;
+    btnP.textContent = paused ? 'Riprendi' : 'Pausa';
+    btnP.classList.toggle('active', paused);
+  });
+
+  updateSizes();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
